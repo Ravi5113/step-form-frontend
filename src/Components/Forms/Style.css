@@ -45,9 +45,16 @@
     font-weight: 600 !important;
 }
 
+.txt {
+    font-family: "DM Sans", sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 18px;
+    margin: 0 !important;
+}
+
 .sty::placeholder {
     font-family: "DM Sans", sans-serif !important;
-    color: #170F49 !important;
+    color: #ff0202 !important;
     font-weight: 600 !important;
 }
 
@@ -129,5 +136,8 @@
 .custom-button {
     font-size: 18px;
     color: #4A3AFF;
-    border-radius: 32px;
+}
+
+:where(.css-dev-only-do-not-override-m4timi).ant-input {
+    font-family: "DM Sans", sans-serif !important;
 }

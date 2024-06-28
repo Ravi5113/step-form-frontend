@@ -62,7 +62,7 @@ const MultiStepForm = () => {
                     Please fill the form below to receive a quote for your project. Feel free to add as much detail as needed.
                 </Text>
             </div>
-            <Content className="p-5 bg-white rounded-3 shadow-lg" style={{ maxWidth: '600px', width: '100%' }}>
+            <Content className="p-5 bg-white  shadow-lg" style={{ maxWidth: '600px', width: '100%', borderRadius: '30px' }}>
                 <Steps current={current} className="custom-steps">
                     {steps.map((item, index) => (
                         <Step key={index} />
@@ -72,24 +72,24 @@ const MultiStepForm = () => {
                 <div className="mt-5 w-100 ">{steps[current].content}</div>
 
             </Content>
-            <div className="d-flex justify-content-between mt-5 mb-3">
+            <div className="d-flex justify-content-between mt-5 mb-3 w-100" style={{ maxWidth: '600px' }}>
                 {current > 0 && (
-                    <Button onClick={onPrev} shape="round" className='custom-button'>
+                    <Button onClick={onPrev} shape="round" className='p-4 txt'>
                         Previous
                     </Button>
                 )}
                 {current < steps.length - 1 && (
-                    <Button type="primary" shape="round" onClick={onNext}>
+                    <Button type="primary" shape="round" className='p-4 txt' onClick={onNext}>
                         Next step
                     </Button>
                 )}
                 {current === steps.length - 1 && (
-                    <Button type="primary" shape="round">
+                    <Button type="primary" shape="round" className='p-4 txt'>
                         Done
                     </Button>
                 )}
             </div>
-        </Layout>
+        </Layout >
     );
 };
 

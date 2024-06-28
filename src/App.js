@@ -1,6 +1,6 @@
 // src/App.js
 import React from 'react';
-import 'antd/dist/antd.css';
+import 'antd/dist/reset.css';
 import './App.css';
 import MultiStepForm from './Components/Forms/MultiStepForm';
 

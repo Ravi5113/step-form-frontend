@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Steps, Layout, Typography, Row, Col, Card, Radio, Table } from 'antd';
+import { Form, Input, Button, Steps, Layout, Typography, Row, Col, Card, Radio, Table, Modal } from 'antd';
 import { UserOutlined, MailOutlined, CodeOutlined, LayoutOutlined, BulbOutlined, SettingOutlined } from '@ant-design/icons';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "./Style.css";
@@ -29,40 +29,51 @@ const services = [
 
 const MultiStepForm = () => {
     const [current, setCurrent] = useState(0);
+    const [data, setData] = useState([]);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         service: '',
         budget: '',
     });
+    const [submittedData, setSubmittedData] = useState([]);
     const [selectedCard, setSelectedCard] = useState(null);
     const [form] = Form.useForm();
-    
-    const justifyContentStyle = () => {
-        if (current === 0) return 'flex-end';
-        if (current === steps.length - 1) return 'space-between';
-        return 'space-between';
-    };
+
     useEffect(() => {
-        const savedData = localStorage.getItem('formData');
-        if (savedData) {
-            setFormData(JSON.parse(savedData));
-            const savedService = JSON.parse(savedData).service;
-            const savedCardIndex = services.findIndex(service => service.title === savedService);
-            setSelectedCard(savedCardIndex);
-        }
+        fetchData();
     }, []);
 
-    useEffect(() => {
-        localStorage.setItem('formData', JSON.stringify(formData));
-    }, [formData]);
+    const fetchData = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/getFormData');
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const jsonData = await response.json();
+            setData(jsonData);
+        } catch (error) {
+            console.error('Error fetching data:', error.message);
+        }
+    };
 
     const onNext = () => {
-        form.validateFields().then(() => {
-            setCurrent(current + 1);
-        }).catch(errorInfo => {
-            console.log('Validation Failed:', errorInfo);
-        });
+        if (current === 2) {
+            if (!formData.budget) {
+                Modal.error({
+                    title: 'Validation Error',
+                    content: 'Please select a budget range before proceeding.',
+                });
+                return;
+            }
+            handleSubmit();
+        } else {
+            form.validateFields().then(() => {
+                setCurrent(current + 1);
+            }).catch(errorInfo => {
+                console.log('Validation Failed:', errorInfo);
+            });
+        }
     };
 
     const onPrev = () => {
@@ -85,25 +96,41 @@ const MultiStepForm = () => {
 
     const handleSubmit = () => {
         form.validateFields().then(() => {
-            const savedSubmissions = JSON.parse(localStorage.getItem('submissions')) || [];
-            savedSubmissions.push(formData);
-            localStorage.setItem('submissions', JSON.stringify(savedSubmissions));
-            downloadJSON(savedSubmissions, 'record.json');
-            alert('Form data submitted and saved locally!');
+            console.log('Form data to be submitted:', formData);
+
+            fetch('http://localhost:5000/saveFormData', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            })
+                .then(response => {
+                    console.log('Response received from backend:', response);
+                    if (response.ok) {
+                        Modal.success({
+                            content: 'Form data submitted and saved successfully!',
+                        });
+
+                        // Fetch the updated data after submission
+                        fetch('http://localhost:5000/getFormData')
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log('Updated submitted data:', data);
+                                setSubmittedData(data);
+                                setCurrent(current + 1); // Move to the next step after submission
+                            })
+                            .catch(error => console.error('Error fetching data:', error));
+                    } else {
+                        alert('Error saving form data');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
         }).catch(errorInfo => {
             console.log('Validation Failed:', errorInfo);
         });
-    };
-
-    const downloadJSON = (data, filename) => {
-        const fileData = JSON.stringify(data, null, 2);
-        const blob = new Blob([fileData], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        link.click();
-        URL.revokeObjectURL(url);
     };
 
     const columns = [
@@ -126,16 +153,6 @@ const MultiStepForm = () => {
             title: 'Budget',
             dataIndex: 'budget',
             key: 'budget',
-        },
-    ];
-
-    const data = [
-        {
-            key: '1',
-            name: formData.name,
-            email: formData.email,
-            service: formData.service,
-            budget: formData.budget,
         },
     ];
 
@@ -283,16 +300,16 @@ const MultiStepForm = () => {
         {
             content: (
                 <Content className='text-start'>
-                    <Title className='custom-h1 text-center m-0' level={2}>Review your data</Title>
+                    <Title className='custom-h1 text-center m-0' level={2}>Form Data</Title>
                     <Text className='custom-p text-center' type="secondary">
-                        Please review your entered information.
+                        This screen display submitted form data
                     </Text>
-
                     <Table
                         className='mt-4 custom-table'
                         columns={columns}
+                        dataSource={submittedData.slice().reverse().map((item, index) => ({ ...item, key: index }))}
                         pagination={false}
-                        dataSource={data} />
+                    />
                 </Content>
             ),
         },
@@ -306,7 +323,7 @@ const MultiStepForm = () => {
                     Please fill the form below to receive a quote for your project. Feel free to add as much detail as needed.
                 </Text>
             </div>
-            <Content className="p-5 bg-white shadow-lg" style={{ maxWidth: '600px', width: '100%', borderRadius: '30px' }}>
+            <Content className="p-5 bg-white shadow-lg w-100 md:w-75" style={{ maxWidth: '600px', borderRadius: '30px' }}>
                 <Steps current={current} className="custom-steps">
                     {steps.slice(0, 3).map((item, index) => (
                         <Step key={index} />
@@ -315,8 +332,8 @@ const MultiStepForm = () => {
                 <div className='w-100 text-danger border-bottom'></div>
                 <div className="mt-5 w-100 ">{steps[current].content}</div>
             </Content>
-            <div className="d-flex mt-5 mb-3 w-100" style={{ maxWidth: '600px', justifyContent: justifyContentStyle() }}>
-                {current > 0 && (
+            <div className="d-flex mt-5 mb-3 w-100" style={{ maxWidth: '600px', justifyContent: 'space-between' }}>
+                {current > 0 && current < steps.length - 1 && (
                     <Button onClick={onPrev} shape="round" className='p-4 txt'>
                         Previous step
                     </Button>
@@ -324,11 +341,6 @@ const MultiStepForm = () => {
                 {current < steps.length - 1 && (
                     <Button type="primary" shape="round" className='p-4 txt' onClick={onNext}>
                         Next step
-                    </Button>
-                )}
-                {current === steps.length - 1 && (
-                    <Button type="primary" shape="round" className='p-4 txt' onClick={handleSubmit}>
-                        Done
                     </Button>
                 )}
             </div>

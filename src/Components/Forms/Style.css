@@ -259,4 +259,11 @@
 .custom-table {
   border-right: none !important;
   border-left: none !important;
+  font-family: "DM Sans", sans-serif !important;
+  font-size: 14px;
+  color: red;
+}
+.custom-table .ant-table {
+  font-family: "DM Sans", sans-serif !important;
+  font-size: 14px;
 }

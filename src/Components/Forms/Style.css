@@ -135,7 +135,11 @@
 :where(.css-dev-only-do-not-override-m4timi).ant-card .ant-card-body {
   padding: 10px !important ;
 }
-
+:where(.css-dev-only-do-not-override-m4timi).ant-radio-button-wrapper
+  > .ant-radio-button {
+  border: 2px solid #3d4bcc !important;
+  border-radius: 5px !important;
+}
 .custom-steps {
   padding: 30px 10px;
 }
@@ -213,15 +217,19 @@
 
 .budget-radio-button {
   width: 48%;
-  border: 1px solid #d9d9d9;
+  border: none !important;
   border-radius: 8px;
-  height: 64px;
+  height: 80px;
   display: flex;
   align-items: center;
   padding: 0 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   transition: border-color 0.3s;
   box-sizing: border-box;
+  color: #170f49;
+  font-size: 18px;
+  margin: 0 !important;
+  font-family: "DM Sans", sans-serif !important;
 }
 
 .budget-radio-button:hover {
@@ -247,4 +255,8 @@
   width: 12px;
   height: 12px;
   background-color: #4c6ef5;
+}
+.custom-table {
+  border-right: none !important;
+  border-left: none !important;
 }

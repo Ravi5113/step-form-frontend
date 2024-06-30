@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Steps, Layout, Typography, Row, Col, Card, Radio, Table } from 'antd';
 import { UserOutlined, MailOutlined, CodeOutlined, LayoutOutlined, BulbOutlined, SettingOutlined } from '@ant-design/icons';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -36,9 +36,33 @@ const MultiStepForm = () => {
         budget: '',
     });
     const [selectedCard, setSelectedCard] = useState(null);
+    const [form] = Form.useForm();
+    
+    const justifyContentStyle = () => {
+        if (current === 0) return 'flex-end';
+        if (current === steps.length - 1) return 'space-between';
+        return 'space-between';
+    };
+    useEffect(() => {
+        const savedData = localStorage.getItem('formData');
+        if (savedData) {
+            setFormData(JSON.parse(savedData));
+            const savedService = JSON.parse(savedData).service;
+            const savedCardIndex = services.findIndex(service => service.title === savedService);
+            setSelectedCard(savedCardIndex);
+        }
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem('formData', JSON.stringify(formData));
+    }, [formData]);
 
     const onNext = () => {
-        setCurrent(current + 1);
+        form.validateFields().then(() => {
+            setCurrent(current + 1);
+        }).catch(errorInfo => {
+            console.log('Validation Failed:', errorInfo);
+        });
     };
 
     const onPrev = () => {
@@ -60,13 +84,25 @@ const MultiStepForm = () => {
     };
 
     const handleSubmit = () => {
-        const jsonData = JSON.stringify(formData);
-        const blob = new Blob([jsonData], { type: 'application/json' });
+        form.validateFields().then(() => {
+            const savedSubmissions = JSON.parse(localStorage.getItem('submissions')) || [];
+            savedSubmissions.push(formData);
+            localStorage.setItem('submissions', JSON.stringify(savedSubmissions));
+            downloadJSON(savedSubmissions, 'record.json');
+            alert('Form data submitted and saved locally!');
+        }).catch(errorInfo => {
+            console.log('Validation Failed:', errorInfo);
+        });
+    };
+
+    const downloadJSON = (data, filename) => {
+        const fileData = JSON.stringify(data, null, 2);
+        const blob = new Blob([fileData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'formData.json';
-        a.click();
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
         URL.revokeObjectURL(url);
     };
 
@@ -82,7 +118,7 @@ const MultiStepForm = () => {
             key: 'email',
         },
         {
-            title: 'Services',
+            title: 'Service',
             dataIndex: 'service',
             key: 'service',
         },
@@ -111,8 +147,18 @@ const MultiStepForm = () => {
                     <Text className='custom-p text-start' type="secondary">
                         Lorem ipsum dolor sit amet consectetur adipisc.
                     </Text>
-                    <Form layout="vertical" className='text-start mt-4 sty'>
-                        <Form.Item label="Name" name="name" className='h3 fw-semibold'>
+                    <Form
+                        form={form}
+                        layout="vertical"
+                        className='text-start mt-4 sty'
+                        initialValues={formData}
+                    >
+                        <Form.Item
+                            label="Name"
+                            name="name"
+                            className='h3 fw-semibold'
+                            rules={[{ required: true, message: 'Please enter your name' }]}
+                        >
                             <Input
                                 placeholder="John Carter"
                                 className='mb-3 px-3 py-2 border rounded-pill bg-white fs-5 fw-bolder sty'
@@ -122,7 +168,15 @@ const MultiStepForm = () => {
                                 onChange={handleInputChange}
                             />
                         </Form.Item>
-                        <Form.Item label="Email" name="email" className='h3 fw-semibold'>
+                        <Form.Item
+                            label="Email"
+                            name="email"
+                            className='h3 fw-semibold'
+                            rules={[
+                                { required: true, message: 'Please enter your email' },
+                                { type: 'email', message: 'Please enter a valid email' },
+                            ]}
+                        >
                             <Input
                                 placeholder="Email address"
                                 className='mb-3 px-3 py-2 border rounded-pill bg-white fs-5 fw-bolder sty'
@@ -169,17 +223,57 @@ const MultiStepForm = () => {
                     <Text className='custom-p text-start' type="secondary">
                         Please select your budget range.
                     </Text>
-                    <Radio.Group className="budget-radio-group" onChange={handleBudgetChange} value={formData.budget}>
-                        <Radio.Button value="$5,000 - $10,000" className="budget-radio-button">
+                    <Radio.Group
+                        className="budget-radio-group"
+                        onChange={handleBudgetChange}
+                        value={formData.budget}
+                    >
+                        <Radio.Button
+                            value="$5,000 - $10,000"
+                            className="budget-radio-button"
+                            style={{
+                                border: `2px solid ${formData.budget === "$5,000 - $10,000" ? "#4a3aff" : "transparent"}`,
+                                color: formData.budget === "$5,000 - $10,000" ? "#4a3aff" : undefined,
+                                borderRadius: "5px",
+                                padding: "5px 10px",
+                            }}
+                        >
                             $5,000 - $10,000
                         </Radio.Button>
-                        <Radio.Button value="$10,000 - $20,000" className="budget-radio-button">
+                        <Radio.Button
+                            value="$10,000 - $20,000"
+                            className="budget-radio-button"
+                            style={{
+                                border: `2px solid ${formData.budget === "$10,000 - $20,000" ? "#4a3aff" : "transparent"}`,
+                                color: formData.budget === "$10,000 - $20,000" ? "#4a3aff" : undefined,
+                                borderRadius: "5px",
+                                padding: "5px 10px",
+                            }}
+                        >
                             $10,000 - $20,000
                         </Radio.Button>
-                        <Radio.Button value="$20,000 - $50,000" className="budget-radio-button">
+                        <Radio.Button
+                            value="$20,000 - $50,000"
+                            className="budget-radio-button"
+                            style={{
+                                border: `2px solid ${formData.budget === "$20,000 - $50,000" ? "#4a3aff" : "transparent"}`,
+                                color: formData.budget === "$20,000 - $50,000" ? "#4a3aff" : undefined,
+                                borderRadius: "5px",
+                                padding: "5px 10px",
+                            }}
+                        >
                             $20,000 - $50,000
                         </Radio.Button>
-                        <Radio.Button value="$50,000+" className="budget-radio-button">
+                        <Radio.Button
+                            value="$50,000+"
+                            className="budget-radio-button"
+                            style={{
+                                border: `2px solid ${formData.budget === "$50,000+" ? "#4a3aff" : "transparent"}`,
+                                color: formData.budget === "$50,000+" ? "#4a3aff" : undefined,
+                                borderRadius: "5px",
+                                padding: "5px 10px",
+                            }}
+                        >
                             $50,000+
                         </Radio.Button>
                     </Radio.Group>
@@ -189,17 +283,16 @@ const MultiStepForm = () => {
         {
             content: (
                 <Content className='text-start'>
-                    <Title className='custom-h1 text-center m-0' level={2}>Form Data</Title>
+                    <Title className='custom-h1 text-center m-0' level={2}>Review your data</Title>
                     <Text className='custom-p text-center' type="secondary">
-                        This screen displays submitted form data
+                        Please review your entered information.
                     </Text>
+
                     <Table
-                        className='mt-4'
+                        className='mt-4 custom-table'
                         columns={columns}
-                        dataSource={data}
                         pagination={false}
-                        bordered
-                    />
+                        dataSource={data} />
                 </Content>
             ),
         },
@@ -215,14 +308,14 @@ const MultiStepForm = () => {
             </div>
             <Content className="p-5 bg-white shadow-lg" style={{ maxWidth: '600px', width: '100%', borderRadius: '30px' }}>
                 <Steps current={current} className="custom-steps">
-                    {steps.map((item, index) => (
+                    {steps.slice(0, 3).map((item, index) => (
                         <Step key={index} />
                     ))}
                 </Steps>
                 <div className='w-100 text-danger border-bottom'></div>
                 <div className="mt-5 w-100 ">{steps[current].content}</div>
             </Content>
-            <div className="d-flex justify-content-between mt-5 mb-3 w-100" style={{ maxWidth: '600px' }}>
+            <div className="d-flex mt-5 mb-3 w-100" style={{ maxWidth: '600px', justifyContent: justifyContentStyle() }}>
                 {current > 0 && (
                     <Button onClick={onPrev} shape="round" className='p-4 txt'>
                         Previous step
